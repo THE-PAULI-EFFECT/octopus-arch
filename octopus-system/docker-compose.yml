@@ -1,0 +1,251 @@
+version: '3.8'
+
+# Octopus Architecture - Master Docker Compose Configuration
+# This orchestrates all services for the trust-based directory system
+
+services:
+  # ============================================================================
+  # DATABASE & CACHE
+  # ============================================================================
+
+  # PostgreSQL (Supabase alternative for local dev)
+  postgres:
+    image: postgres:15-alpine
+    container_name: octopus-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: octopus
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/supabase/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - octopus-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis (Caching & Rate Limiting)
+  redis:
+    image: redis:7-alpine
+    container_name: octopus-redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - octopus-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================================================
+  # BACKEND API
+  # ============================================================================
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: ../infrastructure/docker/Dockerfile.api
+    container_name: octopus-api
+    environment:
+      - ENVIRONMENT=development
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/octopus
+      - REDIS_URL=redis://redis:6379/0
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - SUPABASE_SERVICE_KEY=${SUPABASE_SERVICE_KEY}
+      - SECRET_KEY=${SECRET_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - octopus-network
+    command: uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # ============================================================================
+  # FRONTEND
+  # ============================================================================
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ../infrastructure/docker/Dockerfile.frontend
+    container_name: octopus-frontend
+    environment:
+      - NEXT_PUBLIC_API_URL=http://api:8000
+      - NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    networks:
+      - octopus-network
+    command: npm run dev
+
+  # ============================================================================
+  # AGENT ORCHESTRATION
+  # ============================================================================
+
+  # OpenHands (Execution Spine)
+  openhands:
+    image: ghcr.io/openhands/openhands:latest
+    container_name: octopus-openhands
+    environment:
+      - SANDBOX_TYPE=docker
+      - LLM_MODEL=anthropic/claude-sonnet-4-5-20250929
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - openhands_data:/opt/openhands/workspace
+    ports:
+      - "3001:3000"
+    networks:
+      - octopus-network
+
+  # Agent Zero (Orchestrator)
+  agent-zero:
+    build:
+      context: ./agents/orchestrator
+      dockerfile: ../../infrastructure/docker/Dockerfile.agent-zero
+    container_name: octopus-agent-zero
+    environment:
+      - OPENHANDS_URL=http://openhands:3000
+      - API_URL=http://api:8000
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+    volumes:
+      - ./agents:/app
+    ports:
+      - "5000:5000"
+    depends_on:
+      - openhands
+      - api
+    networks:
+      - octopus-network
+
+  # ============================================================================
+  # SUPPORTING SERVICES
+  # ============================================================================
+
+  # Firecrawl (Web Crawling)
+  firecrawl:
+    image: firecrawl/firecrawl:latest
+    container_name: octopus-firecrawl
+    environment:
+      - FIRECRAWL_API_KEY=${FIRECRAWL_API_KEY}
+    ports:
+      - "3002:3000"
+    networks:
+      - octopus-network
+
+  # DocuSeal (E-Signature)
+  docuseal:
+    image: docuseal/docuseal:latest
+    container_name: octopus-docuseal
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/docuseal
+      - SECRET_KEY_BASE=${DOCUSEAL_SECRET_KEY}
+    volumes:
+      - docuseal_data:/data
+    ports:
+      - "3003:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - octopus-network
+
+  # Postiz (Social Distribution)
+  postiz:
+    image: ghcr.io/gitroomhq/postiz-app:latest
+    container_name: octopus-postiz
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/postiz
+      - BACKEND_INTERNAL_URL=http://postiz:3000
+      - FRONTEND_URL=http://localhost:5001
+    volumes:
+      - postiz_data:/app/uploads
+    ports:
+      - "5001:3000"
+      - "5002:4200"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - octopus-network
+
+  # ============================================================================
+  # MONITORING & OBSERVABILITY (Optional)
+  # ============================================================================
+
+  # Prometheus (Metrics)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: octopus-prometheus
+    volumes:
+      - ./infrastructure/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - octopus-network
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+
+  # Grafana (Dashboards)
+  grafana:
+    image: grafana/grafana:latest
+    container_name: octopus-grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3004:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - octopus-network
+
+# ============================================================================
+# NETWORKS
+# ============================================================================
+
+networks:
+  octopus-network:
+    driver: bridge
+
+# ============================================================================
+# VOLUMES
+# ============================================================================
+
+volumes:
+  postgres_data:
+  redis_data:
+  openhands_data:
+  docuseal_data:
+  postiz_data:
+  prometheus_data:
+  grafana_data:

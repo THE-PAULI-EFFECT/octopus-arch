@@ -1,0 +1,182 @@
+{
+  "city": {
+    "name": "Seattle Metro",
+    "slug": "seattle",
+    "state": "WA",
+    "country": "USA",
+    "latitude": 47.6062,
+    "longitude": -122.3321,
+    "timezone": "America/Los_Angeles",
+    "radius_km": 80,
+    "population": 4018762,
+    "coverage_areas": [
+      "Seattle",
+      "Bellevue",
+      "Redmond",
+      "Kirkland",
+      "Renton",
+      "Kent",
+      "Federal Way",
+      "Shoreline",
+      "Lynnwood",
+      "Everett",
+      "Tacoma",
+      "Olympia"
+    ]
+  },
+  "niches": [
+    {
+      "slug": "roofing",
+      "name": "Roofing",
+      "description": "Residential and commercial roofing installation, repair, and maintenance",
+      "icon": "🏠",
+      "avg_job_value": 8500,
+      "keywords": ["roof repair", "roof replacement", "shingles", "metal roofing"]
+    },
+    {
+      "slug": "construction",
+      "name": "Construction",
+      "description": "General contracting, remodeling, and new construction",
+      "icon": "🏗️",
+      "avg_job_value": 35000,
+      "keywords": ["home remodel", "addition", "renovation", "contractor"]
+    },
+    {
+      "slug": "plumbing",
+      "name": "Plumbing",
+      "description": "Plumbing installation, repair, and emergency services",
+      "icon": "🔧",
+      "avg_job_value": 450,
+      "keywords": ["plumber", "pipe repair", "water heater", "drain cleaning"]
+    },
+    {
+      "slug": "painting",
+      "name": "Painting",
+      "description": "Interior and exterior painting services",
+      "icon": "🎨",
+      "avg_job_value": 2800,
+      "keywords": ["house painting", "interior paint", "exterior paint", "painter"]
+    },
+    {
+      "slug": "pressure-washing",
+      "name": "Pressure Washing",
+      "description": "Exterior cleaning for homes, driveways, and commercial buildings",
+      "icon": "💦",
+      "avg_job_value": 350,
+      "keywords": ["power washing", "driveway cleaning", "house washing"]
+    },
+    {
+      "slug": "graffiti-removal",
+      "name": "Graffiti Removal",
+      "description": "Professional graffiti removal and surface restoration (Master Service - Social Purpose)",
+      "icon": "🧹",
+      "avg_job_value": 450,
+      "keywords": ["graffiti cleanup", "tag removal", "surface cleaning"],
+      "social_purpose_master": true
+    },
+    {
+      "slug": "ghost-kitchens",
+      "name": "Ghost Kitchens",
+      "description": "Delivery-only restaurant concepts and cloud kitchens",
+      "icon": "🍽️",
+      "avg_job_value": 1200,
+      "keywords": ["virtual restaurant", "delivery kitchen", "cloud kitchen"]
+    },
+    {
+      "slug": "catering",
+      "name": "Catering",
+      "description": "Event catering and food services",
+      "icon": "🎉",
+      "avg_job_value": 2500,
+      "keywords": ["event catering", "corporate catering", "wedding catering"]
+    },
+    {
+      "slug": "art-murals",
+      "name": "Art & Murals",
+      "description": "Custom murals, street art, and public art installations",
+      "icon": "🖼️",
+      "avg_job_value": 3500,
+      "keywords": ["mural artist", "street art", "public art", "wall painting"]
+    },
+    {
+      "slug": "moving",
+      "name": "Moving",
+      "description": "Local and long-distance moving services",
+      "icon": "📦",
+      "avg_job_value": 850,
+      "keywords": ["movers", "moving company", "relocation"]
+    },
+    {
+      "slug": "staging",
+      "name": "Home Staging",
+      "description": "Luxury home staging and interior design for real estate",
+      "icon": "🛋️",
+      "avg_job_value": 2200,
+      "keywords": ["home staging", "real estate staging", "interior design"]
+    }
+  ],
+  "contribution_types": [
+    {
+      "slug": "graffiti_removal",
+      "name": "Graffiti Removal",
+      "description": "Remove graffiti from public spaces, parks, and community buildings",
+      "icon": "🧹"
+    },
+    {
+      "slug": "community_mural",
+      "name": "Community Murals",
+      "description": "Create murals in public spaces to beautify neighborhoods",
+      "icon": "🎨"
+    },
+    {
+      "slug": "housing_support",
+      "name": "Housing Support",
+      "description": "Provide housing repair services for low-income families",
+      "icon": "🏠"
+    },
+    {
+      "slug": "food_bank",
+      "name": "Food Bank Logistics",
+      "description": "Transport, organize, and distribute food for food banks",
+      "icon": "🍎"
+    },
+    {
+      "slug": "translation",
+      "name": "Translation Services",
+      "description": "Provide translation and interpretation for community members",
+      "icon": "🌐"
+    },
+    {
+      "slug": "digital_literacy",
+      "name": "Digital Literacy",
+      "description": "Teach digital skills to seniors and underserved communities",
+      "icon": "💻"
+    }
+  ],
+  "sample_providers": [
+    {
+      "business_name": "Peak Performance Roofing",
+      "contact_name": "Sarah Johnson",
+      "email": "sarah@peakroofing.example",
+      "phone": "(206) 555-0101",
+      "website": "https://peakroofing.example",
+      "description": "Family-owned roofing company serving Seattle for 15 years",
+      "services": ["roofing"],
+      "service_area_cities": ["Seattle", "Bellevue", "Redmond"],
+      "years_in_business": 15,
+      "trust_score": 92
+    },
+    {
+      "business_name": "Emerald City Plumbing",
+      "contact_name": "Mike Chen",
+      "email": "mike@emeraldplumbing.example",
+      "phone": "(206) 555-0102",
+      "website": "https://emeraldplumbing.example",
+      "description": "24/7 emergency plumbing services throughout King County",
+      "services": ["plumbing"],
+      "service_area_cities": ["Seattle", "Renton", "Kent", "Federal Way"],
+      "years_in_business": 8,
+      "trust_score": 87
+    }
+  ]
+}

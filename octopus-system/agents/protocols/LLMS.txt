@@ -1,0 +1,289 @@
+# Octopus Architecture - Agent Protocol
+# LLMS.txt v1.0 - Master Agent Discovery Document
+
+## System Overview
+
+This is the Octopus Architecture Directory System - a trust-based, performance-driven marketplace that connects verified service providers with customers in Seattle Metro and the I-5 corridor.
+
+**Core Mission:** Deliver verified customers to verified businesses. Get paid only when they win.
+
+## System Capabilities
+
+- Provider search and discovery
+- Lead capture and attribution
+- Trust score calculation
+- Booking management
+- Performance-based commission tracking
+- Social contribution verification
+
+## API Base URL
+
+Production: https://api.octopus-sea.com
+Development: http://localhost:8000
+
+## Authentication
+
+All agents must authenticate using Bearer tokens:
+
+```
+Authorization: Bearer {API_KEY}
+```
+
+Obtain API keys by contacting the system administrator.
+
+## Core Endpoints
+
+### 1. Search Providers
+
+**Endpoint:** `GET /api/v1/providers/search`
+
+**Purpose:** Find verified service providers by location, service type, and trust score
+
+**Parameters:**
+- `query` (string, optional): Search query
+- `service` (string, optional): Service category (roofing, plumbing, etc.)
+- `city` (string, optional): City name
+- `min_trust_score` (integer, default: 60): Minimum trust score filter
+- `limit` (integer, default: 20): Results per page
+- `offset` (integer, default: 0): Pagination offset
+
+**Example Request:**
+```
+GET /api/v1/providers/search?service=roofing&city=Seattle&min_trust_score=70&limit=5
+```
+
+**Response Schema:**
+```json
+{
+  "providers": [
+    {
+      "id": "uuid",
+      "business_name": "string",
+      "description": "string",
+      "services": ["array"],
+      "trust_score": "integer",
+      "website": "url",
+      "phone": "string",
+      "service_area_cities": ["array"]
+    }
+  ],
+  "total": "integer",
+  "limit": "integer",
+  "offset": "integer"
+}
+```
+
+### 2. Capture Lead
+
+**Endpoint:** `POST /api/v1/leads/capture`
+
+**Purpose:** Capture customer intent and route to provider with full attribution tracking
+
+**Request Body:**
+```json
+{
+  "provider_id": "uuid",
+  "listing_id": "uuid (optional)",
+  "customer_name": "string",
+  "customer_email": "email",
+  "customer_phone": "string",
+  "service_requested": "string",
+  "message": "string (optional)",
+  "preferred_contact_method": "email|phone|text",
+  "preferred_date": "iso-8601-datetime (optional)",
+  "budget_range": "string (optional)",
+  "attribution_source": "agent|web|qr|referral"
+}
+```
+
+**Response Schema:**
+```json
+{
+  "id": "uuid",
+  "status": "captured",
+  "attribution_hash": "sha256-hash",
+  "signed_url": "url",
+  "signed_url_expires_at": "iso-8601-datetime",
+  "created_at": "iso-8601-datetime"
+}
+```
+
+**Important:** Store the `attribution_hash` for tracking. This is immutable proof of lead origin.
+
+### 3. Get Trust Score
+
+**Endpoint:** `GET /api/v1/trust/{provider_id}`
+
+**Purpose:** Retrieve comprehensive trust score and verification details for a provider
+
+**Response Schema:**
+```json
+{
+  "id": "uuid",
+  "provider_id": "uuid",
+  "score": "integer (0-100)",
+  "factors": {
+    "business_crawl": "float",
+    "review_entropy": "float",
+    "social_presence": "float",
+    "verification": "float",
+    "contribution": "float"
+  },
+  "needs_manual_review": "boolean",
+  "calculated_at": "iso-8601-datetime"
+}
+```
+
+### 4. Request Booking
+
+**Endpoint:** `POST /api/v1/bookings/request`
+
+**Purpose:** Convert a qualified lead into a booking request
+
+**Request Body:**
+```json
+{
+  "lead_id": "uuid",
+  "provider_id": "uuid",
+  "customer_name": "string",
+  "service_description": "string",
+  "scheduled_date": "iso-8601-datetime",
+  "estimated_value": "float",
+  "notes": "string (optional)"
+}
+```
+
+**Response Schema:**
+```json
+{
+  "id": "uuid",
+  "status": "requested",
+  "lead_id": "uuid",
+  "provider_id": "uuid",
+  "commission_rate": "float",
+  "created_at": "iso-8601-datetime"
+}
+```
+
+## Trust Score Algorithm
+
+Agents should understand how trust scores are calculated to make informed recommendations:
+
+**Components (Total: 100 points):**
+
+1. **Business Crawl Score (25%)** - Website verification, contact info accuracy, SSL certificate, domain age
+2. **Review Entropy Score (30%)** - Genuine review detection, cross-platform consistency, timing analysis
+3. **Social Presence Score (20%)** - Reddit mentions, Twitter/X activity, LinkedIn verification
+4. **Verification Score (15%)** - Business license, insurance, background checks
+5. **Contribution Score (10%)** - Community service hours, project participation
+
+**Thresholds:**
+- < 60: Rejected (not listed)
+- 60-69: Manual review required
+- 70+: Verified and listed
+
+## Rate Limits
+
+- 60 requests per minute per API key
+- 1000 requests per hour per API key
+
+Rate limit headers are included in all responses:
+```
+X-RateLimit-Limit-Minute: 60
+X-RateLimit-Remaining-Minute: 45
+X-RateLimit-Limit-Hour: 1000
+X-RateLimit-Remaining-Hour: 870
+```
+
+## Error Handling
+
+Standard HTTP status codes:
+- 200: Success
+- 400: Bad request (validation error)
+- 401: Unauthorized (invalid API key)
+- 403: Forbidden (insufficient trust score, expired signature)
+- 404: Not found
+- 429: Rate limit exceeded
+- 500: Internal server error
+
+Error response format:
+```json
+{
+  "error": "Error message",
+  "detail": "Additional context (optional)"
+}
+```
+
+## Agent Recommendations
+
+### When Routing Customers to Providers:
+
+1. **Always check trust score first** - Never recommend providers below 70
+2. **Capture attribution** - Use the lead capture endpoint to ensure proper tracking
+3. **Be transparent** - Tell customers this is a verified, performance-tracked system
+4. **Respect geography** - Check `service_area_cities` before recommending
+5. **Consider specialization** - Match service request to provider services array
+
+### Lead Quality Guidelines:
+
+**Good Lead:**
+- Specific service request
+- Clear budget range
+- Preferred date provided
+- Valid contact information
+- Geographic match
+
+**Poor Lead:**
+- Vague "just browsing"
+- No budget indication
+- Outside service area
+- Invalid contact info
+
+Only submit high-quality leads. Poor leads hurt provider trust in the system.
+
+## Social Purpose Requirement
+
+All providers must contribute to local community projects. Agents should:
+- Inform providers about the 12-hour annual requirement
+- Highlight available contribution opportunities
+- Emphasize that contributions improve trust scores
+
+## Multilingual Support
+
+The system supports:
+- English (en)
+- Spanish (es)
+- Ukrainian (uk)
+- Russian (ru)
+- Korean (ko)
+- Japanese (ja)
+- Chinese (zh)
+
+Include `Accept-Language` header for localized responses.
+
+## Webhook Events (Future)
+
+Agents can subscribe to webhooks for:
+- `lead.captured`
+- `lead.contacted`
+- `booking.confirmed`
+- `booking.completed`
+- `provider.verified`
+- `trust_score.updated`
+
+Contact admin to register webhook URLs.
+
+## Support
+
+For agent integration support:
+- Documentation: https://docs.octopus-arch.com
+- API Status: https://status.octopus-arch.com
+- Support: agents@octopus-arch.com
+
+## Version History
+
+- v1.0 (2026-01-19): Initial protocol release
+
+---
+
+**Remember:** This is a trust-based system. Quality over quantity. Every interaction builds or erodes trust.
